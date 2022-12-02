@@ -22,3 +22,10 @@ msbuild.err
 msbuild.wrn
 
 .ionide/
+*.vsidx
+.vs/ProjectEvaluation/tradingstraregybacktesting.metadata.v5.1
+.vs/ProjectEvaluation/tradingstraregybacktesting.projects.v5.1
+.vs/TradingStraregyBacktesting/DesignTimeBuild/.dtbcache.v2
+.vs/TradingStraregyBacktesting/FileContentIndex/read.lock
+.vs/TradingStraregyBacktesting/v17/.futdcache.v2
+.vs/TradingStraregyBacktesting/v17/.suo

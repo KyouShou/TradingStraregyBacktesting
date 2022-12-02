@@ -1,0 +1,305 @@
+﻿using NetTrader.Indicator;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
+using TradingStraregyBacktesting.Models;
+
+namespace TradingStraregyBacktesting
+{
+    internal interface ITradingStrategy
+    {
+        public void ExecuteStrategy(List<Ohlc> ohlcList, int listIndex);
+        public TradingResultModel GetTradingResult();
+    }
+
+    public class JingStrategy : ITradingStrategy
+    {
+        private double takeProfitPrice;
+        private double stopLossPrice;
+        private Exchanges exchanges;
+
+        public JingStrategy()
+        {
+            exchanges = new Exchanges();
+        }
+
+        public void ExecuteStrategy(List<Ohlc> sortedOhlcList, int listIndex)
+        {
+            if (exchanges.PositionExist())
+            {
+                if (IsTimeToStopLoss(sortedOhlcList, listIndex))
+                {
+                    StopLoss(sortedOhlcList, listIndex, exchanges);
+                }
+                else if (IsTimeToTakeProfit(sortedOhlcList, listIndex))
+                {
+                    TakeProfit(sortedOhlcList, listIndex, exchanges);
+                }
+            }
+            else
+            {
+                if (IsTimeToLong(sortedOhlcList, listIndex))
+                {
+                    exchanges.OpenPosition(sortedOhlcList, listIndex, "long");
+                }
+
+                else if (IsTimeToShort(sortedOhlcList, listIndex))
+                {
+                    exchanges.OpenPosition(sortedOhlcList, listIndex, "short");
+                }
+            }
+        }
+
+        private bool IsTimeToLong(List<Ohlc> ohlcList, int nowListIndex)
+        {
+            //檢查
+            //1.前兩根K棒是否為波峰
+            //2.最近20根K棒是否存在第二個波峰
+            //3.波峰是否為負
+            //皆通過的情況表示必定開倉，因此在此設定停損/停利點
+            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && IsHigherPeakExist(ohlcList, nowListIndex) && IsMacdNegativeNumber(ohlcList, nowListIndex))
+            {
+                ATR atr = new ATR(13);
+                atr.Load(ohlcList);
+                ATRSerie serie = atr.Calculate();
+
+                var atrList = serie.ATR;
+                atrList.Reverse();
+
+                SetStopLoss((double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]));
+                SetTakeProfit((double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]));
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private bool IsTimeToShort(List<Ohlc> ohlcList, int nowListIndex)
+        {
+            //檢查
+            //1.前兩根K棒是否為波峰
+            //2.最近20根K棒是否存在第二個波峰
+            //3.波峰是否為正
+            //皆通過的情況表示必定開倉，因此在此設定停損/停利點
+            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && IsHigherPeakExist(ohlcList, nowListIndex) && !IsMacdNegativeNumber(ohlcList, nowListIndex))
+            {
+                ATR atr = new ATR(13);
+                atr.Load(ohlcList);
+                ATRSerie serie = atr.Calculate();
+
+                var atrList = serie.ATR;
+                atrList.Reverse();
+
+                SetStopLoss((double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]));
+                SetTakeProfit((double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]));
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public TradingResultModel GetTradingResult()
+        {
+            //相關資料皆在交易所，而交易所只在這個類別被實體化，因此利用此方法傳遞資料，減少類別間的耦合程度
+            return exchanges.GetTradingResult();
+        }
+
+        private bool IsTimeToTakeProfit(List<Ohlc> ohlcList, int nowListIndex)
+        {
+            //檢查停利點是否比停損點大，是的(if)話表示目前是Long，否則(else)是Short
+            if (takeProfitPrice >= stopLossPrice)
+            {
+                if (ohlcList[nowListIndex].High >= takeProfitPrice)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (ohlcList[nowListIndex].Low <= takeProfitPrice)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        private bool IsTimeToStopLoss(List<Ohlc> ohlcList, int nowListIndex)
+        {
+            //檢查停利點是否比停損點大，是的(if)話表示目前是Long，否則(else)是Short
+            if (takeProfitPrice >= stopLossPrice)
+            {
+                if (ohlcList[nowListIndex].Low <= stopLossPrice)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (ohlcList[nowListIndex].High >= stopLossPrice)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+
+        private void SetStopLoss(double stopLoss)
+        {
+            this.stopLossPrice = stopLoss;
+        }
+        private void SetTakeProfit(double takeProfit)
+        {
+            this.takeProfitPrice = takeProfit;
+        }
+        private void TakeProfit(List<Ohlc> ohlcList, int listIndex, Exchanges exchanges)
+        {
+            exchanges.ClosePosition(ohlcList, listIndex, (decimal)takeProfitPrice);
+        }
+        private void StopLoss(List<Ohlc> ohlcList, int listIndex, Exchanges exchanges)
+        {
+            exchanges.ClosePosition(ohlcList, listIndex, (decimal)stopLossPrice);
+        }
+
+        //檢查前兩根K棒是否為波峰
+        private bool IsNextToLastCandlestickPeak(List<Ohlc> ohlcList, int nowListIndex)
+        {
+            MACD macd = new MACD(13, 34, 9);
+            macd.Load(ohlcList);
+            MACDSerie serie = macd.Calculate();
+
+            var macdHistogramList = serie.MACDHistogram;
+            macdHistogramList.Reverse();
+
+
+            //檢查nowListIndex + 2是否為檢查nowListIndex到nowListIndex+4之間最大的值
+            var isNextToLastCandlestickIndexMaximum = true;
+            if (macdHistogramList[nowListIndex + 2] > 0)
+            {
+                for (int i = nowListIndex + 1; i < nowListIndex + 5; i++)
+                {
+                    if (macdHistogramList[i] > macdHistogramList[nowListIndex + 2])
+                    {
+                        isNextToLastCandlestickIndexMaximum = false;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = nowListIndex + 1; i < nowListIndex + 5; i++)
+                {
+                    if (macdHistogramList[i] < macdHistogramList[nowListIndex + 2])
+                    {
+                        isNextToLastCandlestickIndexMaximum = false;
+                    }
+                }
+            }
+
+
+            //檢查nowListIndex + 3是否大於nowListIndex + 4
+            var isFourthandFifthHistogramIncreasing = false;
+            if (macdHistogramList[nowListIndex + 2] > 0)
+            {
+                if (macdHistogramList[nowListIndex + 3] > macdHistogramList[nowListIndex + 4])
+                {
+                    isFourthandFifthHistogramIncreasing = true;
+                }
+            }
+            else
+            {
+                if (macdHistogramList[nowListIndex + 3] < macdHistogramList[nowListIndex + 4])
+                {
+                    isFourthandFifthHistogramIncreasing = true;
+                }
+            }
+
+            if (isNextToLastCandlestickIndexMaximum && isFourthandFifthHistogramIncreasing)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private bool IsHigherPeakExist(List<Ohlc> ohlcList, int nowListIndex)
+        {
+            MACD macd = new MACD(13, 34, 9);
+            macd.Load(ohlcList);
+            MACDSerie serie = macd.Calculate();
+
+            var macdHistogramList = serie.MACDHistogram;
+            macdHistogramList.Reverse();
+            var result = false;
+
+            if (macdHistogramList[nowListIndex + 2] > 0)
+            {
+                for (int i = nowListIndex + 3; i < nowListIndex + 23; i++)
+                {
+                    if (macdHistogramList[nowListIndex + 2] < macdHistogramList[i])
+                    {
+                        result = true;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = nowListIndex + 3; i < nowListIndex + 23; i++)
+                {
+                    if (macdHistogramList[nowListIndex + 2] > macdHistogramList[i])
+                    {
+                        result = true;
+                    }
+                }
+            }
+            return result;
+        }
+
+        //大於等於零時，return false
+        private bool IsMacdNegativeNumber(List<Ohlc> ohlcList, int nowListIndex)
+        {
+            MACD macd = new MACD(13, 34, 9);
+            macd.Load(ohlcList);
+            MACDSerie serie = macd.Calculate();
+
+            var macdHistogramList = serie.MACDHistogram;
+            macdHistogramList.Reverse();
+
+            var targetNumber = macdHistogramList[nowListIndex - 2];
+
+            if (targetNumber >= 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+    }
+
+
+
+}
