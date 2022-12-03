@@ -12,13 +12,20 @@ namespace TradingStraregyBacktesting
 {
     public class Exchanges
     {
-        private decimal money;
+        private decimal MoneyInPurse;
         private List<TradingRecordsModel> tradingRecordsList;
+        private int lever;
 
         public Exchanges()
         {
             tradingRecordsList = new List<TradingRecordsModel>();
-            money = 10000;
+            MoneyInPurse = 10000;
+            lever = 1;
+        }
+
+        public void SetLever(int lever)
+        {
+            this.lever = lever;
         }
 
         public bool PositionExist()
@@ -38,18 +45,18 @@ namespace TradingStraregyBacktesting
         public void OpenPosition(List<Ohlc> ohlcList, int nowListIndex, string LongOrShort)
         {
             TradingRecordsModel tradingRecordsModel = new TradingRecordsModel();
-            var fee = GetFee(money);
+            var fee = GetFee(MoneyInPurse);
 
             //以現在所處的K棒的開盤價作為建倉點位
             tradingRecordsModel.LongShortType = LongOrShort;
             tradingRecordsModel.DealPrice = (decimal)ohlcList[nowListIndex].Open;
-            tradingRecordsModel.DealMoney = money;
+            tradingRecordsModel.DealMoney = MoneyInPurse - fee;
             tradingRecordsModel.Fee = fee;
             tradingRecordsModel.OpenClosePositionType = "open";
-            tradingRecordsModel.TotalIncome = 0;
+            tradingRecordsModel.TotalIncome = -fee;
             tradingRecordsModel.DealTime = ohlcList[nowListIndex].Date;
 
-            money = 0;
+            MoneyInPurse = 0;
             tradingRecordsList.Add(tradingRecordsModel);
         }
 
@@ -58,8 +65,6 @@ namespace TradingStraregyBacktesting
             TradingRecordsModel tradingRecordsModel = new TradingRecordsModel();
 
             var spreadIncome = GetSpreadIncome(tradingRecordsList[tradingRecordsList.Count - 1].DealPrice, closePositionDealPrice, tradingRecordsList[tradingRecordsList.Count - 1].DealMoney, tradingRecordsList[tradingRecordsList.Count - 1].LongShortType);
-
-            //費用先不計算
             var fee = GetFee(tradingRecordsList[tradingRecordsList.Count - 1].DealMoney + spreadIncome);
 
             //以現在所處的K棒的開盤價作為建倉點位
@@ -71,7 +76,7 @@ namespace TradingStraregyBacktesting
             tradingRecordsModel.TotalIncome = spreadIncome - fee;
             tradingRecordsModel.DealTime = ohlcList[nowListIndex].Date;
 
-            money = tradingRecordsModel.DealMoney;
+            MoneyInPurse = tradingRecordsModel.DealMoney;
             tradingRecordsList.Add(tradingRecordsModel);
         }
 
@@ -79,8 +84,8 @@ namespace TradingStraregyBacktesting
         {
             var result = new TradingResultModel();
             result.TradingHistoryList = tradingRecordsList;
-            result.MoneyRetracementMaximum = GetLowestMoneyInTradingRecords();
-            result.MoneyDiffernceBetweenHighAndLow = GetHighestMoneyInTradingRecords() - GetLowestMoneyInTradingRecords();
+            result.LowestMoneyInPurse = GetLowestMoneyInPurse();
+            result.MoneyDiffernceBetweenHighAndLow = GetHighestMoneyInTradingRecords() - GetLowestMoneyInPurse();
             result.MoneyOnceLossMaximum = GetHighestLoss();
             result.WinRate = GetWinRate();
             result.TransactionTimes = GetClosePostionTimes();
@@ -89,8 +94,14 @@ namespace TradingStraregyBacktesting
             result.WinningStreakMaximum = GetWinningStreakMaximum(); ;
             result.LosingStreakMaximum = GetLosingStreakMaximum();
             result.HowManyChanceToTradeInOneDay = GetAvgDealTimesInOneDay();
+            result.MoneyInPurse = GetMoneyInPurseAtLast();
 
             return result;
+        }
+
+        private decimal GetMoneyInPurseAtLast()
+        {
+            return tradingRecordsList[tradingRecordsList.Count - 1].DealMoney;
         }
 
         private int GetWinningStreakMaximum()
@@ -114,7 +125,7 @@ namespace TradingStraregyBacktesting
                 }
                 maximunList.Add(streakTimes);
             }
-            return maximunList.OrderByDescending(e=>e).ToList()[0];
+            return maximunList.OrderByDescending(e => e).ToList()[0];
         }
 
         private int GetLosingStreakMaximum()
@@ -145,7 +156,8 @@ namespace TradingStraregyBacktesting
         private decimal GetAvgDealTimesInOneDay()
         {
             var totalDealTimes = GetClosePostionTimes();
-            var differenceBetweenFirstDealDateAndLastDealDate = (tradingRecordsList[tradingRecordsList.Count - 1].DealTime - tradingRecordsList[0].DealTime).Days;
+            var differenceBetweenFirstDealDateAndLastDealDate = (tradingRecordsList[tradingRecordsList.Count - 1].DealTime - tradingRecordsList[0].DealTime).Days + 1;
+
             return (decimal)totalDealTimes / differenceBetweenFirstDealDateAndLastDealDate;
         }
 
@@ -212,7 +224,7 @@ namespace TradingStraregyBacktesting
             return sorttedCloseRecord[0].DealMoney;
         }
 
-        private decimal GetLowestMoneyInTradingRecords()
+        private decimal GetLowestMoneyInPurse()
         {
             var getCloseRecord = CloneTradingRecordsList(tradingRecordsList);
             var sorttedCloseRecord = getCloseRecord.OrderBy(e => e.DealMoney).ToList();
@@ -248,22 +260,23 @@ namespace TradingStraregyBacktesting
             {
                 var earnPercent = (closePositionPrice / openPositionPrice) - 1;
 
-                return dealMoneyWhenOpenPosition * earnPercent;
+                return dealMoneyWhenOpenPosition * earnPercent * lever;
 
             }
             else if (LongOrShortWhenOpenPosition == "short")
             {
                 var earnPercent = ((closePositionPrice / openPositionPrice) - 1) * -1;
 
-                return dealMoneyWhenOpenPosition * earnPercent;
+                return dealMoneyWhenOpenPosition * earnPercent * lever ;
             }
             throw new Exception();
         }
         //輸入成交總價，計算手續費，預設為0.04%
+        //由於在開倉的當下就會被收取手續費，因此手續費越高，Income就會越低，舉個例子，10000元的本金，0%開倉手續費，賺10%共賺1000元；50%開倉手續費，本金剩5000，賺10%只賺500元
         private decimal GetFee(decimal dealPrice)
         {
             var dealPriceDicimal = (decimal)dealPrice;
-            return dealPriceDicimal * 0.0004m;
+            return dealPriceDicimal * 0.0004m * lever;
         }
 
     }

@@ -11,7 +11,7 @@ namespace TradingStraregyBacktesting.Models
         //交易紀錄
         public List<TradingRecordsModel> TradingHistoryList { get; set; }
         //本金的最大回撤
-        public decimal MoneyRetracementMaximum { get; set; }
+        public decimal LowestMoneyInPurse { get; set; }
         //高點的最大回撤
         public decimal MoneyDiffernceBetweenHighAndLow { get; set; }
         //單次最大損失
@@ -30,6 +30,8 @@ namespace TradingStraregyBacktesting.Models
         public decimal TotalFee { get; set; }
         //淨額或淨損(扣除手續費後)
         public decimal TotalIncome { get; set; }
+        //最後餘額
+        public decimal MoneyInPurse { get; set; }
 
     }
 }

@@ -14,10 +14,9 @@ internal class Program
         List<Ohlc> candlestickList = Candlestick.Load(filePath + fileName);
 
         //策略可以寫進config並用工廠生產，使本程式符合開放封閉原則
-        ITradingStrategy strategy = new JingStrategy();
+        ITradingStrategy strategy = new OpenPositionWhenMACDHistogramLowerWithPriceDeviateAndAdjustableATRStrategy();
         new Market().Run(candlestickList, strategy);
         TradingResultModel result = strategy.GetTradingResult();
         Console.ReadLine();
-
     }
 }

@@ -15,13 +15,15 @@ namespace TradingStraregyBacktesting
         public TradingResultModel GetTradingResult();
     }
 
-    public class JingStrategy : ITradingStrategy
+    public class OpenPositionWhenMACDHistogramLowerLowStrategy : ITradingStrategy
     {
         private double takeProfitPrice;
         private double stopLossPrice;
         private Exchanges exchanges;
+        private List<double?> atrList;
+        private List<double?> macdHistogramList;
 
-        public JingStrategy()
+        public OpenPositionWhenMACDHistogramLowerLowStrategy()
         {
             exchanges = new Exchanges();
         }
@@ -62,12 +64,7 @@ namespace TradingStraregyBacktesting
             //皆通過的情況表示必定開倉，因此在此設定停損/停利點
             if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && IsHigherPeakExist(ohlcList, nowListIndex) && IsMacdNegativeNumber(ohlcList, nowListIndex))
             {
-                ATR atr = new ATR(13);
-                atr.Load(ohlcList);
-                ATRSerie serie = atr.Calculate();
-
-                var atrList = serie.ATR;
-                atrList.Reverse();
+                UpdateATRList(ohlcList);
 
                 SetStopLoss((double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]));
                 SetTakeProfit((double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]));
@@ -88,13 +85,7 @@ namespace TradingStraregyBacktesting
             //皆通過的情況表示必定開倉，因此在此設定停損/停利點
             if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && IsHigherPeakExist(ohlcList, nowListIndex) && !IsMacdNegativeNumber(ohlcList, nowListIndex))
             {
-                ATR atr = new ATR(13);
-                atr.Load(ohlcList);
-                ATRSerie serie = atr.Calculate();
-
-                var atrList = serie.ATR;
-                atrList.Reverse();
-
+                UpdateATRList(ohlcList);
                 SetStopLoss((double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]));
                 SetTakeProfit((double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]));
                 return true;
@@ -135,6 +126,44 @@ namespace TradingStraregyBacktesting
                 {
                     return false;
                 }
+            }
+        }
+
+        private void UpdateATRList(List<Ohlc> ohlcList)
+        {      
+            if (atrList == null)
+            {
+                //使用NetTrader.Indicator計算技術分析指標時，ohlcList必須OrderByDate
+                var ohlcListOrderByDateTime = ohlcList.OrderBy(e => e.Date).ToList();
+                ATR atr = new ATR(13);
+                atr.Load(ohlcListOrderByDateTime);
+                ATRSerie serie = atr.Calculate();
+
+                atrList = serie.ATR;
+                atrList.Reverse();
+            }
+            else
+            {
+                return;
+            }    
+        }
+
+        private void UpdateMACDList(List<Ohlc> ohlcList)
+        {          
+            if (macdHistogramList == null)
+            {
+                //使用NetTrader.Indicator計算技術分析指標時，ohlcList必須OrderByDate
+                var ohlcListOrderByDateTime = ohlcList.OrderBy(e => e.Date).ToList();
+                MACD macd = new MACD(13, 34, 9);
+                macd.Load(ohlcListOrderByDateTime);
+                MACDSerie serie = macd.Calculate();
+
+                macdHistogramList = serie.MACDHistogram;               
+                macdHistogramList.Reverse();
+            }
+            else
+            {
+                return;
             }
         }
 
@@ -185,13 +214,7 @@ namespace TradingStraregyBacktesting
         //檢查前兩根K棒是否為波峰
         private bool IsNextToLastCandlestickPeak(List<Ohlc> ohlcList, int nowListIndex)
         {
-            MACD macd = new MACD(13, 34, 9);
-            macd.Load(ohlcList);
-            MACDSerie serie = macd.Calculate();
-
-            var macdHistogramList = serie.MACDHistogram;
-            macdHistogramList.Reverse();
-
+            UpdateMACDList(ohlcList);
 
             //檢查nowListIndex + 2是否為檢查nowListIndex到nowListIndex+4之間最大的值
             var isNextToLastCandlestickIndexMaximum = true;
@@ -246,12 +269,8 @@ namespace TradingStraregyBacktesting
 
         private bool IsHigherPeakExist(List<Ohlc> ohlcList, int nowListIndex)
         {
-            MACD macd = new MACD(13, 34, 9);
-            macd.Load(ohlcList);
-            MACDSerie serie = macd.Calculate();
+            UpdateMACDList(ohlcList);
 
-            var macdHistogramList = serie.MACDHistogram;
-            macdHistogramList.Reverse();
             var result = false;
 
             if (macdHistogramList[nowListIndex + 2] > 0)
@@ -280,14 +299,9 @@ namespace TradingStraregyBacktesting
         //大於等於零時，return false
         private bool IsMacdNegativeNumber(List<Ohlc> ohlcList, int nowListIndex)
         {
-            MACD macd = new MACD(13, 34, 9);
-            macd.Load(ohlcList);
-            MACDSerie serie = macd.Calculate();
+            UpdateMACDList(ohlcList);
 
-            var macdHistogramList = serie.MACDHistogram;
-            macdHistogramList.Reverse();
-
-            var targetNumber = macdHistogramList[nowListIndex - 2];
+            var targetNumber = macdHistogramList[nowListIndex + 2];
 
             if (targetNumber >= 0)
             {
@@ -299,7 +313,5 @@ namespace TradingStraregyBacktesting
             }
         }
     }
-
-
-
+    
 }
