@@ -42,6 +42,7 @@ namespace TradingStraregyBacktesting
             }
         }
 
+        //預設以當前K棒開盤價開倉
         public void OpenPosition(List<Ohlc> ohlcList, int nowListIndex, string LongOrShort)
         {
             TradingRecordsModel tradingRecordsModel = new TradingRecordsModel();
@@ -50,6 +51,26 @@ namespace TradingStraregyBacktesting
             //以現在所處的K棒的開盤價作為建倉點位
             tradingRecordsModel.LongShortType = LongOrShort;
             tradingRecordsModel.DealPrice = (decimal)ohlcList[nowListIndex].Open;
+            //控制進場點位可能可以大幅提高勝率和利潤
+            //tradingRecordsModel.DealPrice = LongOrShort == "long" ? (decimal)ohlcList[nowListIndex].Open * 0.9992m : (decimal)ohlcList[nowListIndex].Open * 1.0008m;
+            tradingRecordsModel.DealMoney = MoneyInPurse - fee;
+            tradingRecordsModel.Fee = fee;
+            tradingRecordsModel.OpenClosePositionType = "open";
+            tradingRecordsModel.TotalIncome = -fee;
+            tradingRecordsModel.DealTime = ohlcList[nowListIndex].Date;
+
+            MoneyInPurse = 0;
+            tradingRecordsList.Add(tradingRecordsModel);
+        }
+
+        public void OpenPosition(List<Ohlc> ohlcList, int nowListIndex, string LongOrShort , decimal openPositionPrice)
+        {
+            TradingRecordsModel tradingRecordsModel = new TradingRecordsModel();
+            var fee = GetFee(MoneyInPurse);
+
+            //以現在所處的K棒的開盤價作為建倉點位
+            tradingRecordsModel.LongShortType = LongOrShort;
+            tradingRecordsModel.DealPrice = openPositionPrice;
             tradingRecordsModel.DealMoney = MoneyInPurse - fee;
             tradingRecordsModel.Fee = fee;
             tradingRecordsModel.OpenClosePositionType = "open";
