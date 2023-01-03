@@ -62,12 +62,17 @@ namespace TradingStraregyBacktesting
             //2.最近20根K棒是否存在第二個波峰
             //3.波峰是否為負
             //皆通過的情況表示必定開倉，因此在此設定停損/停利點
-            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && IsHigherPeakExist(ohlcList, nowListIndex) && IsMacdNegativeNumber(ohlcList, nowListIndex))
+            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && 
+                IsHigherPeakExist(ohlcList, nowListIndex) && 
+                IsMacdNegativeNumber(ohlcList, nowListIndex))
             {
                 UpdateATRList(ohlcList);
 
-                SetStopLoss((double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]));
-                SetTakeProfit((double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]));
+                double stopLossPrice = (double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]);
+                double takeProfitPrice = (double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]);
+
+                SetStopLoss(stopLossPrice);
+                SetTakeProfit(takeProfitPrice);
                 return true;
             }
             else
@@ -83,11 +88,17 @@ namespace TradingStraregyBacktesting
             //2.最近20根K棒是否存在第二個波峰
             //3.波峰是否為正
             //皆通過的情況表示必定開倉，因此在此設定停損/停利點
-            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && IsHigherPeakExist(ohlcList, nowListIndex) && !IsMacdNegativeNumber(ohlcList, nowListIndex))
+            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && 
+                IsHigherPeakExist(ohlcList, nowListIndex) && 
+                !IsMacdNegativeNumber(ohlcList, nowListIndex))
             {
                 UpdateATRList(ohlcList);
-                SetStopLoss((double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]));
-                SetTakeProfit((double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]));
+
+                double stopLossPrice = (double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]);
+                double takeProfitPrice = (double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]);
+
+                SetStopLoss(stopLossPrice);
+                SetTakeProfit(takeProfitPrice);
                 return true;
             }
             else
