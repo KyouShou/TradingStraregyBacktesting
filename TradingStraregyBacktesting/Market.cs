@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace TradingStraregyBacktesting
 {
-    internal class Market
+    public class Market
     {
         public void Run(List<Ohlc> ohlcList, ITradingStrategy strategy)
         {

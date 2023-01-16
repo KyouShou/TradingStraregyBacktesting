@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace TradingStraregyBacktesting
 {
-    internal class Candlestick
+    public class Candlestick
     {
         public static List<Ohlc> Load(string filePathAndfileName)
         {

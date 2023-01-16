@@ -9,7 +9,7 @@ using TradingStraregyBacktesting.Models;
 
 namespace TradingStraregyBacktesting
 {
-    internal interface ITradingStrategy
+    public interface ITradingStrategy
     {
         public void ExecuteStrategy(List<Ohlc> ohlcList, int listIndex);
         public TradingResultModel GetTradingResult();
