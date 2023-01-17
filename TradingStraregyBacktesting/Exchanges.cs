@@ -10,22 +10,31 @@ using TradingStraregyBacktesting.Models;
 
 namespace TradingStraregyBacktesting
 {
-    public class Exchanges
+    public class Exchanges : IExchanges
     {
         private decimal MoneyInPurse;
         private List<TradingRecordsModel> tradingRecordsList;
         private int lever;
+        private ClosePositionHandler closePositionHandler;
 
         public Exchanges()
         {
+            closePositionHandler = new ClosePositionHandler(this);
             tradingRecordsList = new List<TradingRecordsModel>();
             MoneyInPurse = 10000;
             lever = 1;
         }
-
+        public void SetClosePositionHandler(ClosePositionHandler closePositionHandler)
+        {
+            this.closePositionHandler = closePositionHandler;
+        }
         public void SetLever(int lever)
         {
             this.lever = lever;
+        }
+        public void SetLever(string symbol, int lever)
+        {
+            SetLever(lever);
         }
 
         public bool PositionExist()
@@ -63,7 +72,7 @@ namespace TradingStraregyBacktesting
             tradingRecordsList.Add(tradingRecordsModel);
         }
 
-        public void OpenPosition(List<Ohlc> ohlcList, int nowListIndex, string LongOrShort , decimal openPositionPrice)
+        public void OpenPosition(List<Ohlc> ohlcList, int nowListIndex, string LongOrShort, decimal openPositionPrice)
         {
             TradingRecordsModel tradingRecordsModel = new TradingRecordsModel();
             var fee = GetFee(MoneyInPurse);
@@ -79,6 +88,10 @@ namespace TradingStraregyBacktesting
 
             MoneyInPurse = 0;
             tradingRecordsList.Add(tradingRecordsModel);
+        }
+        public void OpenPosition(string symbol, List<Ohlc> ohlcList, int nowListIndex, string LongOrShort, decimal openPositionPrice)
+        {
+            OpenPosition(ohlcList, nowListIndex, LongOrShort, openPositionPrice);
         }
 
         public void ClosePosition(List<Ohlc> ohlcList, int nowListIndex, decimal closePositionDealPrice)
@@ -100,6 +113,14 @@ namespace TradingStraregyBacktesting
             MoneyInPurse = tradingRecordsModel.DealMoney;
             tradingRecordsList.Add(tradingRecordsModel);
         }
+        public void ClosePosition(string symbol, List<Ohlc> ohlcList, int nowListIndex, decimal closePositionDealPrice)
+        {
+            ClosePosition(ohlcList, nowListIndex, closePositionDealPrice);
+        }
+        public void CancelAllOrders(string symbol)
+        {
+            //do nothing.
+        }
 
         public TradingResultModel GetTradingResult()
         {
@@ -118,6 +139,10 @@ namespace TradingStraregyBacktesting
             result.MoneyInPurse = GetMoneyInPurseAtLast();
 
             return result;
+        }
+        public ClosePositionHandler GetClosePositionHandler()
+        {
+            return this.closePositionHandler;
         }
 
         private decimal GetMoneyInPurseAtLast()
@@ -288,7 +313,7 @@ namespace TradingStraregyBacktesting
             {
                 var earnPercent = ((closePositionPrice / openPositionPrice) - 1) * -1;
 
-                return dealMoneyWhenOpenPosition * earnPercent * lever ;
+                return dealMoneyWhenOpenPosition * earnPercent * lever;
             }
             throw new Exception();
         }
@@ -298,6 +323,15 @@ namespace TradingStraregyBacktesting
         {
             var dealPriceDicimal = (decimal)dealPrice;
             return dealPriceDicimal * 0.0004m * lever;
+        }
+
+        public void SetStopLoss(string symbol, string longOrShort, decimal stopLoss)
+        {
+            closePositionHandler.SetStopLossPrice((double)stopLoss);
+        }
+        public void SetTakeProfit(string symbol, string longOrShort, decimal takeProfit)
+        {
+            closePositionHandler.SetTakeProfitPrice((double)takeProfit);
         }
 
     }
