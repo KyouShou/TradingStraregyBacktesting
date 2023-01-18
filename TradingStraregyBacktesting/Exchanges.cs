@@ -241,7 +241,7 @@ namespace TradingStraregyBacktesting
         {
             var getCloseRecord = CloneTradingRecordsList(tradingRecordsList);
             var closePositionList = getCloseRecord.FindAll(e => e.OpenClosePositionType == "close");
-            var winRecordsList = closePositionList.FindAll(e => e.TotalIncome >= 0);
+            var winRecordsList = closePositionList.FindAll(e => e.TotalIncome > 0);
             var lossRecordsList = closePositionList.FindAll(e => e.TotalIncome < 0);
             decimal winRate = 0;
             if (winRecordsList.Count + lossRecordsList.Count != 0)
