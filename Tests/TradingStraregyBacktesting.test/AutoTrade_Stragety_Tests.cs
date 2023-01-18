@@ -18,7 +18,7 @@ namespace TradingStraregyBacktesting.Tests
 
             //策略的切換可以寫進config並用工廠生產，使本程式符合開放封閉原則
             IExchanges exchanges = new Exchanges();
-            ITradingStrategy strategy = new AutoTrade_OpenPositionWhenMACDHistogramLowerLowWithPriceDeviateAndAdjustableATRStrategy(exchanges);
+            ITradingStrategy strategy = new AutoTrade_Banmusha_BNB_OneHour_Strategy(exchanges);
             new Market().Run(candlestickList, strategy, exchanges.GetClosePositionHandler());
             TradingResultModel result = strategy.GetTradingResult();
 
@@ -28,17 +28,17 @@ namespace TradingStraregyBacktesting.Tests
         [Test]
         public void Stragety_IsResultCorrect()
         {
-            Assert.IsTrue(result.HowManyChanceToTradeInOneDay == 0.103m);
+            Assert.IsTrue(result.HowManyChanceToTradeInOneDay == 0.105m);
             Assert.IsTrue(result.LosingStreakMaximum == 8);
-            Assert.IsTrue((int)result.LowestMoneyInPurse == 8519);
-            Assert.IsTrue((int)result.MoneyDiffernceBetweenHighAndLow == 150434);
-            Assert.IsTrue((int)result.MoneyInPurse == 110730);
-            Assert.IsTrue((int)result.MoneyOnceLossMaximum == -33601);
-            Assert.IsTrue((int)result.TotalFee == 25752);
-            Assert.IsTrue((int)result.TotalIncome == 100730);
-            Assert.IsTrue(result.TradingHistoryList.Count == 206);
-            Assert.IsTrue(result.TransactionTimes == 103);
-            Assert.IsTrue(result.WinRate == "43.69%");
+            Assert.IsTrue((int)result.LowestMoneyInPurse == 8548);
+            Assert.IsTrue((int)result.MoneyDiffernceBetweenHighAndLow == 288719);
+            Assert.IsTrue((int)result.MoneyInPurse == 206819);
+            Assert.IsTrue((int)result.MoneyOnceLossMaximum == -63046);
+            Assert.IsTrue((int)result.TotalFee == 40360);
+            Assert.IsTrue((int)result.TotalIncome == 196819);
+            Assert.IsTrue(result.TradingHistoryList.Count == 210);
+            Assert.IsTrue(result.TransactionTimes == 105);
+            Assert.IsTrue(result.WinRate == "45.71%");
             Assert.IsTrue(result.WinningStreakMaximum == 5);
         }
     }
