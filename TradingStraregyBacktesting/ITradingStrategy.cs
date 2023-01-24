@@ -15,7 +15,7 @@ namespace TradingStraregyBacktesting
         public TradingResultModel GetTradingResult();
     }
 
-    public class OpenPositionWhenMACDHistogramLowerLowStrategy : ITradingStrategy
+    public class SampleStrategy : ITradingStrategy
     {
         private double takeProfitPrice;
         private double stopLossPrice;
@@ -23,7 +23,7 @@ namespace TradingStraregyBacktesting
         private List<double?> atrList;
         private List<double?> macdHistogramList;
 
-        public OpenPositionWhenMACDHistogramLowerLowStrategy()
+        public SampleStrategy()
         {
             exchanges = new Exchanges();
         }
