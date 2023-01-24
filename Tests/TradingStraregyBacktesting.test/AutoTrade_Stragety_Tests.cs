@@ -1,5 +1,6 @@
 using NetTrader.Indicator;
 using TradingStraregyBacktesting.Models;
+using TradingStraregyBacktesting.Stragety;
 
 namespace TradingStraregyBacktesting.Tests
 {
