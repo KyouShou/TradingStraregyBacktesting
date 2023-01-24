@@ -24,10 +24,6 @@ namespace TradingStraregyBacktesting
             MoneyInPurse = 10000;
             lever = 1;
         }
-        public void SetClosePositionHandler(ClosePositionHandler closePositionHandler)
-        {
-            this.closePositionHandler = closePositionHandler;
-        }
         public void SetLever(int lever)
         {
             this.lever = lever;
@@ -36,7 +32,6 @@ namespace TradingStraregyBacktesting
         {
             SetLever(lever);
         }
-
         public bool PositionExist()
         {
             var openPositionCount = tradingRecordsList.FindAll(x => x.OpenClosePositionType == "open").ToList().Count;

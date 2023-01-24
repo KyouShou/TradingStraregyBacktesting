@@ -1,4 +1,5 @@
-﻿using NetTrader.Indicator;
+﻿using Binance.Spot.Models;
+using NetTrader.Indicator;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,27 +20,21 @@ namespace TradingStraregyBacktesting
     {
         private double takeProfitPrice;
         private double stopLossPrice;
-        private Exchanges exchanges;
+        private IExchanges exchanges;
         private List<double?> atrList;
         private List<double?> macdHistogramList;
+        private string symbol;
 
-        public SampleStrategy()
+        public SampleStrategy(IExchanges exchanges)
         {
-            exchanges = new Exchanges();
+            this.exchanges = exchanges;
         }
 
         public void ExecuteStrategy(List<Ohlc> sortedOhlcList, int listIndex)
         {
             if (exchanges.PositionExist())
             {
-                if (IsTimeToStopLoss(sortedOhlcList, listIndex))
-                {
-                    StopLoss(sortedOhlcList, listIndex, exchanges);
-                }
-                else if (IsTimeToTakeProfit(sortedOhlcList, listIndex))
-                {
-                    TakeProfit(sortedOhlcList, listIndex, exchanges);
-                }
+                //Do nothing
             }
             else
             {
@@ -71,8 +66,8 @@ namespace TradingStraregyBacktesting
                 double stopLossPrice = (double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]);
                 double takeProfitPrice = (double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]);
 
-                SetStopLoss(stopLossPrice);
-                SetTakeProfit(takeProfitPrice);
+                SetStopLoss(stopLossPrice, "short");
+                SetTakeProfit(takeProfitPrice, "short");
                 return true;
             }
             else
@@ -97,8 +92,8 @@ namespace TradingStraregyBacktesting
                 double stopLossPrice = (double)(ohlcList[nowListIndex].Open + atrList[nowListIndex]);
                 double takeProfitPrice = (double)(ohlcList[nowListIndex].Open - atrList[nowListIndex]);
 
-                SetStopLoss(stopLossPrice);
-                SetTakeProfit(takeProfitPrice);
+                SetStopLoss(stopLossPrice, "long");
+                SetTakeProfit(takeProfitPrice, "long");
                 return true;
             }
             else
@@ -205,13 +200,15 @@ namespace TradingStraregyBacktesting
             }
         }
 
-        private void SetStopLoss(double stopLoss)
+        private void SetStopLoss(double stopLoss, string longOrShortWhenClosePosition)
         {
-            this.stopLossPrice = stopLoss;
+            var longOrShort = longOrShortWhenClosePosition == "long" ? Side.BUY : Side.SELL;
+            exchanges.SetStopLoss(symbol, longOrShort, (decimal)stopLoss);
         }
-        private void SetTakeProfit(double takeProfit)
+        private void SetTakeProfit(double takeProfit, string longOrShortWhenClosePosition)
         {
-            this.takeProfitPrice = takeProfit;
+            var longOrShort = longOrShortWhenClosePosition == "long" ? Side.BUY : Side.SELL;
+            exchanges.SetTakeProfit(symbol, longOrShort, (decimal)takeProfit);
         }
         private void TakeProfit(List<Ohlc> ohlcList, int listIndex, Exchanges exchanges)
         {
