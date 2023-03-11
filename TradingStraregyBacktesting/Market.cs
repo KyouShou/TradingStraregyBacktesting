@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Authentication;
 using System.Text;
 using System.Threading.Tasks;
+using TradingStraregyBacktesting.Stragety;
 
 namespace TradingStraregyBacktesting
 {

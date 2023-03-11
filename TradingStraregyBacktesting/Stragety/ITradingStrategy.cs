@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TradingStraregyBacktesting.Models;
 
-namespace TradingStraregyBacktesting
+namespace TradingStraregyBacktesting.Stragety
 {
     public interface ITradingStrategy
     {
@@ -57,8 +57,8 @@ namespace TradingStraregyBacktesting
             //2.最近20根K棒是否存在第二個波峰
             //3.波峰是否為負
             //皆通過的情況表示必定開倉，因此在此設定停損/停利點
-            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && 
-                IsHigherPeakExist(ohlcList, nowListIndex) && 
+            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) &&
+                IsHigherPeakExist(ohlcList, nowListIndex) &&
                 IsMacdNegativeNumber(ohlcList, nowListIndex))
             {
                 UpdateATRList(ohlcList);
@@ -83,8 +83,8 @@ namespace TradingStraregyBacktesting
             //2.最近20根K棒是否存在第二個波峰
             //3.波峰是否為正
             //皆通過的情況表示必定開倉，因此在此設定停損/停利點
-            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) && 
-                IsHigherPeakExist(ohlcList, nowListIndex) && 
+            if (IsNextToLastCandlestickPeak(ohlcList, nowListIndex) &&
+                IsHigherPeakExist(ohlcList, nowListIndex) &&
                 !IsMacdNegativeNumber(ohlcList, nowListIndex))
             {
                 UpdateATRList(ohlcList);
@@ -136,7 +136,7 @@ namespace TradingStraregyBacktesting
         }
 
         private void UpdateATRList(List<Ohlc> ohlcList)
-        {      
+        {
             if (atrList == null)
             {
                 //使用NetTrader.Indicator計算技術分析指標時，ohlcList必須OrderByDate
@@ -151,11 +151,11 @@ namespace TradingStraregyBacktesting
             else
             {
                 return;
-            }    
+            }
         }
 
         private void UpdateMACDList(List<Ohlc> ohlcList)
-        {          
+        {
             if (macdHistogramList == null)
             {
                 //使用NetTrader.Indicator計算技術分析指標時，ohlcList必須OrderByDate
@@ -164,7 +164,7 @@ namespace TradingStraregyBacktesting
                 macd.Load(ohlcListOrderByDateTime);
                 MACDSerie serie = macd.Calculate();
 
-                macdHistogramList = serie.MACDHistogram;               
+                macdHistogramList = serie.MACDHistogram;
                 macdHistogramList.Reverse();
             }
             else
@@ -321,5 +321,5 @@ namespace TradingStraregyBacktesting
             }
         }
     }
-    
+
 }
